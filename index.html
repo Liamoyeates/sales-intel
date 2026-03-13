@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SalesIntel — AI-Powered Outbound</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0a0b;
+    --surface:  #111113;
+    --surface2: #18181b;
+    --surface3: #1f1f23;
+    --orange:   #f26522;
+    --orange2:  #ff7a35;
+    --orange-dim: rgba(242,101,34,0.12);
+    --text:     #e8e8ea;
+    --text-dim: #6b6b72;
+    --border:   rgba(255,255,255,0.06);
+    --green:    #22c55e;
+    --red:      #ef4444;
+    --blue:     #63b3ed;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; overflow: hidden; }
+
+  /* LOGIN */
+  .login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; }
+  .login-screen.hidden { display: none; }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 48px 40px; width: 380px; text-align: center; }
+  .login-logo { width: 52px; height: 52px; background: var(--orange); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; color: #fff; margin: 0 auto 20px; }
+  .login-box h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .login-box p { color: var(--text-dim); font-size: 13px; margin-bottom: 32px; }
+  .login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; margin-bottom: 12px; transition: border-color 0.2s; text-align: left; }
+  .login-input:focus { border-color: var(--orange); }
+  .login-input::placeholder { color: var(--text-dim); }
+  .login-btn { width: 100%; background: var(--orange); color: #fff; border: none; border-radius: 10px; padding: 14px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
+  .login-btn:hover { background: var(--orange2); }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 12px; display: none; background: rgba(239,68,68,0.1); border-radius: 8px; padding: 10px; }
+  .login-footer { margin-top: 24px; font-size: 11px; color: var(--text-dim); }
+
+  .app-wrap { display: flex; width: 100%; height: 100vh; }
+  .app-wrap.hidden { display: none; }
+
+  /* SIDEBAR */
+  .sidebar { width: 240px; min-width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0; }
+  .logo { padding: 28px 24px 24px; border-bottom: 1px solid var(--border); }
+  .logo-mark { width: 36px; height: 36px; background: var(--orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: #fff; margin-bottom: 10px; }
+  .logo h1 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); }
+  .logo p { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text-dim); font-size: 13px; font-weight: 500; transition: all 0.15s; margin-bottom: 2px; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--orange-dim); color: var(--orange); }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; box-shadow: 0 0 6px var(--green); }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; height: 100vh; }
+  .page { display: none; padding: 36px 40px; max-width: 1100px; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 32px; }
+  .page-header h2 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; }
+  .page-header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .card-sm { padding: 16px 20px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; color: var(--orange); }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* SEARCH */
+  .search-row { display: flex; gap: 12px; margin-bottom: 28px; }
+  .search-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s; }
+  .search-input:focus { border-color: var(--orange); }
+  .search-input::placeholder { color: var(--text-dim); }
+  .btn { background: var(--orange); color: #fff; border: none; border-radius: 10px; padding: 14px 28px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: var(--orange2); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-outline { background: transparent; color: var(--orange); border: 1px solid var(--orange); border-radius: 8px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .btn-outline:hover { background: var(--orange-dim); }
+
+  /* PIPELINE STEPS */
+  .pipeline-steps { display: flex; align-items: center; justify-content: space-between; padding: 28px 20px; margin-bottom: 24px; }
+  .step-item { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
+  .step-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; transition: all 0.3s; border: 2px solid var(--border); background: var(--surface3); color: var(--text-dim); }
+  .step-circle.active { border-color: var(--orange); background: var(--orange-dim); color: var(--orange); animation: pulse 1.5s infinite; }
+  .step-circle.done { border-color: var(--green); background: rgba(34,197,94,0.12); color: var(--green); }
+  .step-label { font-size: 11px; color: var(--text-dim); text-align: center; }
+  .step-label.active { color: var(--orange); }
+  .step-label.done { color: var(--green); }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 8px; margin-bottom: 20px; transition: background 0.3s; }
+  .step-line.done { background: var(--green); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(242,101,34,0.4); } 50% { box-shadow: 0 0 0 8px rgba(242,101,34,0); } }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .badge-a { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-b { background: rgba(242,101,34,0.15); color: var(--orange); }
+  .badge-c { background: rgba(249,115,22,0.15); color: #f97316; }
+  .badge-d { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-direct { background: rgba(242,101,34,0.15); color: var(--orange); }
+  .badge-nurture { background: rgba(99,179,237,0.15); color: var(--blue); }
+
+  /* SCORE RING */
+  .score-display { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; }
+  .score-ring { width: 100px; height: 100px; border-radius: 50%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 3px solid var(--orange); background: var(--orange-dim); }
+  .score-number { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--orange); }
+  .score-max { font-size: 11px; color: var(--text-dim); }
+
+  /* EMAIL CARDS */
+  .email-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .email-persona { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .email-subject { font-size: 13px; color: var(--orange); margin-bottom: 10px; font-weight: 500; }
+  .email-body { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.7; color: var(--text); width: 100%; min-height: 120px; resize: vertical; font-family: 'DM Sans', sans-serif; outline: none; }
+  .email-body:focus { border-color: var(--orange); }
+  .email-section-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 12px 0 6px; }
+  .approve-btn { margin-top: 12px; background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .approve-btn:hover { background: rgba(34,197,94,0.2); }
+  .approve-btn.approved { background: rgba(34,197,94,0.2); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 14px; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+  td { padding: 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(255,255,255,0.015); }
+  tr.expandable { cursor: pointer; }
+  .expanded-content { background: var(--surface2); padding: 20px; border-radius: 8px; margin: 8px 0; }
+
+  /* INTEL GRID */
+  .intel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .intel-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .intel-value { font-size: 13px; color: var(--text); }
+  .signal-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .signal-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .signal-high { background: var(--red); }
+  .signal-medium { background: var(--orange); }
+  .signal-low { background: var(--green); }
+
+  /* LOADER */
+  .loader { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 40px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { color: var(--text-dim); font-size: 14px; }
+  .loader-sub { color: var(--text-dim); font-size: 12px; opacity: 0.6; }
+
+  /* BULK */
+  .dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 48px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 20px; }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--orange); background: var(--orange-dim); }
+  .dropzone-icon { font-size: 40px; margin-bottom: 12px; }
+  .dropzone h3 { font-family: 'Syne', sans-serif; font-size: 16px; margin-bottom: 6px; }
+  .dropzone p { color: var(--text-dim); font-size: 13px; }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 20px; height: 8px; margin: 8px 0; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--orange); border-radius: 20px; transition: width 0.5s; }
+
+  /* ACTIVITY */
+  .activity-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .activity-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--orange-dim); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .activity-text { flex: 1; font-size: 13px; }
+  .activity-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* PROMPT */
+  .prompt-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; font-size: 12px; line-height: 1.8; color: #94a3b8; white-space: pre-wrap; max-height: 500px; overflow-y: auto; font-family: monospace; }
+  .copy-btn { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 12px; cursor: pointer; transition: all 0.15s; margin-bottom: 12px; }
+  .copy-btn:hover { color: var(--orange); border-color: var(--orange); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty h3 { font-family: 'Syne', sans-serif; font-size: 16px; color: var(--text); margin-bottom: 8px; }
+
+  /* FILTER */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; align-items: center; }
+  .filter-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+  .search-filter { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--text); font-size: 13px; outline: none; flex: 1; max-width: 280px; }
+  .search-filter:focus { border-color: var(--orange); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--green); border-radius: 10px; padding: 14px 20px; font-size: 13px; color: var(--green); display: none; z-index: 1000; animation: slideIn 0.3s ease; }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .tag { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-size: 11px; color: var(--text-dim); margin: 2px; }
+  .score-bar-row { margin-bottom: 10px; }
+  .score-bar-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .score-bar-track { background: var(--surface2); border-radius: 4px; height: 6px; }
+  .score-bar-fill { height: 100%; border-radius: 4px; background: var(--orange); transition: width 0.6s; }
+
+  /* PIPELINE TIMEOUT MESSAGE */
+  .timeout-msg { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
+  .timeout-msg strong { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">S</div>
+    <h2>SalesIntel</h2>
+    <p>AI-Powered Outbound Platform<br>Enter your credentials to continue</p>
+    <input class="login-input" type="text" id="login-user" placeholder="Username" onkeydown="if(event.key==='Enter')doLogin()">
+    <input class="login-input" type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="login-error">Incorrect username or password</div>
+    <div class="login-footer">🔒 Secured — internal use only</div>
+  </div>
+</div>
+
+<div class="app-wrap hidden" id="app-wrap">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">S</div>
+    <h1>SalesIntel</h1>
+    <p>AI-Powered Outbound</p>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('lookup')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Company Lookup
+      <span id="nav-running" style="display:none;margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 6px var(--orange);animation:pulse 1.5s infinite;flex-shrink:0;"></span>
+    </div>
+    <div class="nav-item" onclick="showPage('bulk')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Bulk Upload
+    </div>
+    <div class="nav-item" onclick="showPage('results')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Results Library
+    </div>
+  </nav>
+  <div id="running-banner" style="display:none;margin:0 12px 8px;background:var(--orange-dim);border:1px solid rgba(242,101,34,0.3);border-radius:8px;padding:10px 12px;">
+    <div style="font-size:11px;color:var(--orange);font-weight:600;margin-bottom:2px;">⚡ Pipeline Running</div>
+    <div style="font-size:11px;color:var(--text-dim);" id="running-company-name">Processing...</div>
+    <div style="font-size:10px;color:var(--orange);margin-top:5px;margin-bottom:5px;" id="running-stage-label">Starting...</div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:20px;height:4px;overflow:hidden;">
+      <div id="stage-progress-bar" style="height:100%;background:var(--orange);border-radius:20px;transition:width 0.6s ease;width:0%;"></div>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <span class="status-dot"></span>Server live — onrender.com
+    <br><br>
+    <span style="cursor:pointer;color:var(--text-dim);font-size:11px;" onclick="doLogout()">⎋ Sign out</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header"><h2>Dashboard</h2><p>Your AI-powered sales intelligence overview</p></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Companies Researched</div><div class="stat-value" id="stat-total">—</div><div class="stat-sub">All time</div></div>
+      <div class="stat-card"><div class="stat-label">Tier A Leads</div><div class="stat-value" id="stat-tier-a">—</div><div class="stat-sub">High priority</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Lead Score</div><div class="stat-value" id="stat-avg">—</div><div class="stat-sub">Out of 100</div></div>
+      <div class="stat-card"><div class="stat-label">Emails Ready</div><div class="stat-value" id="stat-emails">—</div><div class="stat-sub">Approved & queued</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">Recent Activity</div>
+        <button class="btn" onclick="showPage('lookup')" style="padding:10px 20px;font-size:13px;">+ Research Company</button>
+      </div>
+      <div id="activity-feed"><div class="empty"><div class="empty-icon">🔍</div><h3>No activity yet</h3><p>Run your first company lookup to get started</p></div></div>
+    </div>
+  </div>
+
+  <!-- LOOKUP -->
+  <div class="page" id="page-lookup">
+    <div class="page-header"><h2>Company Lookup</h2><p>Run AI-powered research on any company</p></div>
+    <div class="search-row">
+      <input class="search-input" id="company-input" type="text" placeholder="Enter company name e.g. Love Holidays, Airbnb..." onkeydown="if(event.key==='Enter')runPipeline()">
+      <button class="btn" id="run-btn" onclick="runPipeline()">▶ Run Pipeline</button>
+    </div>
+
+    <div class="card" id="pipeline-card" style="display:none;margin-bottom:24px;">
+      <div class="pipeline-steps">
+        <div class="step-item"><div class="step-circle" id="step-1">1</div><div class="step-label" id="step-1-label">Researching</div></div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step-item"><div class="step-circle" id="step-2">2</div><div class="step-label" id="step-2-label">Checkout</div></div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step-item"><div class="step-circle" id="step-3">3</div><div class="step-label" id="step-3-label">Scoring</div></div>
+        <div class="step-line" id="line-3"></div>
+        <div class="step-item"><div class="step-circle" id="step-4">4</div><div class="step-label" id="step-4-label">Outreach</div></div>
+        <div class="step-line" id="line-4"></div>
+        <div class="step-item"><div class="step-circle" id="step-5">5</div><div class="step-label" id="step-5-label">QA</div></div>
+      </div>
+      <div class="loader" id="pipeline-loader">
+        <div class="spinner"></div>
+        <div class="loader-text" id="loader-text">Agents running — this takes 2–4 minutes</div>
+        <div class="loader-sub" id="loader-sub">Searching the web for company intelligence...</div>
+      </div>
+      <div id="timeout-message" style="display:none;" class="timeout-msg">
+        <p>Pipeline is taking longer than expected — the server may be under load.</p>
+        <p style="margin-top:8px;"><strong>Results will still appear here automatically</strong> — keep this tab open or check the Results Library.</p>
+        <button class="btn-outline" style="margin-top:12px;" onclick="manualCheck()">Check for results now</button>
+      </div>
+    </div>
+
+    <div id="results-section" style="display:none;">
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('brief',event)">Intelligence Brief</div>
+        <div class="tab" onclick="showTab('score',event)">Lead Score</div>
+        <div class="tab" onclick="showTab('emails',event)">Emails</div>
+        <div class="tab" onclick="showTab('prompt',event)">Lovable Prompt</div>
+      </div>
+      <div id="tab-brief" class="tab-content"><div class="card" id="brief-content"></div></div>
+      <div id="tab-score" class="tab-content" style="display:none;"><div class="card" id="score-content"></div></div>
+      <div id="tab-emails" class="tab-content" style="display:none;"><div id="emails-content"></div></div>
+      <div id="tab-prompt" class="tab-content" style="display:none;"><div class="card"><button class="copy-btn" onclick="copyPrompt()">📋 Copy Full Prompt</button><div class="prompt-box" id="prompt-content">No prompt generated yet.</div></div></div>
+    </div>
+  </div>
+
+  <!-- BULK -->
+  <div class="page" id="page-bulk">
+    <div class="page-header"><h2>Bulk Upload</h2><p>Upload a CSV of companies and run the full pipeline on all of them</p></div>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+      <div class="dropzone-icon">📂</div>
+      <h3>Drop your CSV file here</h3>
+      <p>Or click to browse — one company name per row</p>
+      <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleFile(this)">
+    </div>
+    <div id="bulk-preview" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;" id="bulk-count"></div>
+        <button class="btn" onclick="runBulk()" id="bulk-run-btn">▶ Run All</button>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div id="bulk-progress" style="display:none;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span id="bulk-status-text">Processing...</span><span id="bulk-progress-pct">0%</span></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="bulk-bar" style="width:0%"></div></div>
+        </div>
+        <table><thead><tr><th>#</th><th>Company</th><th>Status</th><th>Score</th><th>Tier</th></tr></thead><tbody id="bulk-table"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS LIBRARY -->
+  <div class="page" id="page-results">
+    <div class="page-header"><h2>Results Library</h2><p>All past pipeline results</p></div>
+    <div class="filter-row">
+      <input class="search-filter" type="text" placeholder="Search companies..." oninput="filterResults(this.value)">
+      <div class="filter-btn active" onclick="setTierFilter('all',this)">All</div>
+      <div class="filter-btn" onclick="setTierFilter('A',this)">Tier A</div>
+      <div class="filter-btn" onclick="setTierFilter('B',this)">Tier B</div>
+      <div class="filter-btn" onclick="setTierFilter('C',this)">Tier C</div>
+      <div class="filter-btn" onclick="setTierFilter('D',this)">Tier D</div>
+      <button class="btn-outline" onclick="exportCSV()" style="margin-left:auto;">⬇ Export CSV</button>
+      <button class="btn-outline" onclick="loadResults()">↻ Refresh</button>
+    </div>
+    <div class="card" id="results-table-wrap"><div class="empty"><div class="spinner" style="margin:0 auto 16px;"></div><p>Loading results...</p></div></div>
+  </div>
+
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://sales-agent-2110.onrender.com';
+let allResults = [];
+let currentResult = null;
+let tierFilter = 'all';
+let searchFilter = '';
+let approvedEmails = {};
+let globalPollInterval = null;
+let globalPollCompany = null;
+
+// ─── NAV ──────────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const pages = ['dashboard','lookup','bulk','results'];
+  document.querySelectorAll('.nav-item')[pages.indexOf(page)]?.classList.add('active');
+  if (page === 'results') loadResults();
+  if (page === 'dashboard') updateDashboard();
+  if (page === 'lookup' && currentResult) {
+    document.getElementById('pipeline-card').style.display = 'none';
+    displayResults(currentResult);
+    document.getElementById('company-input').value = currentResult.research?.company_name || currentResult.company_name || '';
+  }
+  if (page === 'lookup' && globalPollCompany && !currentResult) {
+    document.getElementById('pipeline-card').style.display = 'block';
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('company-input').value = globalPollCompany;
+    document.getElementById('loader-text').textContent = 'Agents still running — hang tight...';
+    document.getElementById('loader-sub').textContent = 'Results will appear here automatically';
+  }
+}
+
+function showTab(tab, event) {
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).style.display = 'block';
+  if (event) event.target.classList.add('active');
+}
+
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = color || 'var(--green)';
+  t.style.color = color || 'var(--green)';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 4000);
+}
+
+// ─── RUNNING STATE ────────────────────────────────────────
+function setRunningState(company) {
+  globalPollCompany = company;
+  document.getElementById('nav-running').style.display = 'inline-block';
+  document.getElementById('running-banner').style.display = 'block';
+  document.getElementById('running-company-name').textContent = company;
+}
+
+function clearRunningState() {
+  globalPollCompany = null;
+  if (globalPollInterval) { clearInterval(globalPollInterval); globalPollInterval = null; }
+  document.getElementById('nav-running').style.display = 'none';
+  document.getElementById('running-banner').style.display = 'none';
+}
+
+// ─── MANUAL CHECK ─────────────────────────────────────────
+async function manualCheck() {
+  const company = globalPollCompany;
+  if (!company) return;
+  showToast('Checking for results...', 'var(--orange)');
+  try {
+    const res = await fetch(API + '/api/results/' + encodeURIComponent(company));
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.research) {
+        handlePipelineComplete(data, company);
+        return;
+      }
+    }
+    showToast('Still processing — check again in a minute', 'var(--orange)');
+  } catch(e) {
+    showToast('Could not reach server', 'var(--red)');
+  }
+}
+
+// ─── PIPELINE COMPLETE HANDLER ────────────────────────────
+function handlePipelineComplete(data, company) {
+  clearRunningState();
+
+  // Complete all step indicators
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step-' + i);
+    if (el) { el.className = 'step-circle done'; el.textContent = '✓'; }
+    const label = document.getElementById('step-' + i + '-label');
+    if (label) label.className = 'step-label done';
+    const line = document.getElementById('line-' + i);
+    if (line) line.className = 'step-line done';
+  }
+  const loader = document.getElementById('pipeline-loader');
+  if (loader) loader.style.display = 'none';
+  const timeoutMsg = document.getElementById('timeout-message');
+  if (timeoutMsg) timeoutMsg.style.display = 'none';
+
+  currentResult = data;
+
+  if (document.getElementById('page-lookup').classList.contains('active')) {
+    displayResults(data);
+  }
+
+  if (!allResults.find(r => (r.company_name || r.research?.company_name) === company)) {
+    allResults.unshift(data);
+  }
+  updateDashboard();
+  showToast('✅ Pipeline complete for ' + company);
+}
+
+// ─── RUN PIPELINE ─────────────────────────────────────────
+async function runPipeline() {
+  const company = document.getElementById('company-input').value.trim();
+  if (!company) return;
+  if (globalPollCompany) {
+    showToast('⚠️ Pipeline already running for ' + globalPollCompany, 'var(--orange)');
+    return;
+  }
+
+  currentResult = null;
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('pipeline-card').style.display = 'block';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('timeout-message').style.display = 'none';
+  document.getElementById('pipeline-loader').style.display = 'flex';
+
+  // Reset steps
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step-' + i);
+    if (el) { el.className = 'step-circle'; el.textContent = i; }
+    document.getElementById('step-' + i + '-label').className = 'step-label';
+    if (i < 5) document.getElementById('line-' + i).className = 'step-line';
+  }
+
+  document.getElementById('loader-text').textContent = 'Agents running — this takes 2–4 minutes';
+  document.getElementById('loader-sub').textContent = 'Searching the web for company intelligence...';
+
+  const stepLabels = ['Researching company...','Scanning checkout...','Scoring lead...','Writing outreach...','QA review...'];
+  const stepSubs = ['Searching the web for company intelligence...','Detecting payment stack from checkout pages...','Analysing fit against your ICP...','Crafting personalised email sequences...','Supervisor checking quality...'];
+
+  function activateStep(i) {
+    if (i > 0) {
+      const prev = document.getElementById('step-' + i);
+      if (prev) { prev.className = 'step-circle done'; prev.textContent = '✓'; }
+      const prevLabel = document.getElementById('step-' + i + '-label');
+      if (prevLabel) prevLabel.className = 'step-label done';
+      const line = document.getElementById('line-' + i);
+      if (line) line.className = 'step-line done';
+    }
+    const next = document.getElementById('step-' + (i+1));
+    if (next) next.className = 'step-circle active';
+    const nextLabel = document.getElementById('step-' + (i+1) + '-label');
+    if (nextLabel) nextLabel.className = 'step-label active';
+    document.getElementById('loader-text').textContent = stepLabels[i] || 'Almost done...';
+    document.getElementById('loader-sub').textContent = stepSubs[i] || '';
+  }
+
+  activateStep(0);
+  setRunningState(company);
+
+  // Map server stage keys → step indices (1-based)
+  const stageToStep = {
+    'research':  1,
+    'checkout':  2,
+    'scoring':   3,
+    'outreach':  4,
+    'lovable':   5,
+    'complete':  5,
+  };
+
+  let lastStageIndex = 0;
+  let resultAttempts = 0;
+  let statusAttempts = 0;
+  const MAX_ATTEMPTS = 75; // 10 minutes at 8s intervals
+
+  // After 3.5 mins show the timeout message but keep polling
+  const timeoutTimer = setTimeout(() => {
+    if (globalPollCompany) {
+      document.getElementById('timeout-message').style.display = 'block';
+      document.getElementById('loader-text').textContent = 'Taking longer than usual...';
+      document.getElementById('loader-sub').textContent = 'Still running — do not close this tab';
+    }
+  }, 210000);
+
+  try {
+    await fetch(API + '/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_name: company })
+    });
+
+    // Poll /api/status every 2s for live stage updates
+    let statusInterval = setInterval(async () => {
+      statusAttempts++;
+      try {
+        const res = await fetch(API + '/api/status');
+        if (res.ok) {
+          const status = await res.json();
+          if (status.running && status.stage && status.stage !== 'idle') {
+            const stepNum = stageToStep[status.stage];
+            if (stepNum && stepNum > lastStageIndex) {
+              lastStageIndex = stepNum;
+              activateStep(stepNum - 1);
+            }
+            // Update sidebar banner with live label
+            const bannerLabel = document.getElementById('running-stage-label');
+            if (bannerLabel) bannerLabel.textContent = status.label || status.stage;
+            // Update progress bar
+            const bar = document.getElementById('stage-progress-bar');
+            if (bar) bar.style.width = (status.progress_pct || 0) + '%';
+          }
+        }
+      } catch(e) {}
+      if (statusAttempts > MAX_ATTEMPTS * 4) clearInterval(statusInterval);
+    }, 2000);
+
+    // Poll /api/results every 8s to detect completion
+    globalPollInterval = setInterval(async () => {
+      resultAttempts++;
+      try {
+        const res = await fetch(API + '/api/results/' + encodeURIComponent(company));
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.research) {
+            clearInterval(statusInterval);
+            clearTimeout(timeoutTimer);
+            handlePipelineComplete(data, company);
+          }
+        }
+      } catch(e) {}
+
+      if (resultAttempts >= MAX_ATTEMPTS) {
+        clearInterval(statusInterval);
+        clearRunningState();
+        clearTimeout(timeoutTimer);
+        document.getElementById('loader-text').textContent = 'Check Results Library';
+        document.getElementById('loader-sub').textContent = 'Pipeline may have completed — check the Results Library tab';
+        document.getElementById('timeout-message').style.display = 'block';
+        showToast('⚠️ Polling stopped — check Results Library', 'var(--orange)');
+      }
+    }, 8000);
+
+  } catch(e) {
+    clearRunningState();
+    clearTimeout(timeoutTimer);
+    showToast('❌ Error connecting to server', 'var(--red)');
+  }
+
+  document.getElementById('run-btn').disabled = false;
+}
+
+// ─── DISPLAY RESULTS ──────────────────────────────────────
+function displayResults(data) {
+  document.getElementById('results-section').style.display = 'block';
+  const r = data.research || {};
+  const s = data.score || {};
+  const o = data.outreach || {};
+
+  const signals = (r.buying_signals || []).map(sig => `
+    <div class="signal-item">
+      <div class="signal-dot signal-${sig.urgency || 'medium'}"></div>
+      <div><div style="font-size:13px;">${sig.signal}</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Urgency: ${sig.urgency || 'medium'}${sig.source ? ' · ' + sig.source : ''}</div></div>
+    </div>`).join('');
+
+  const providers = (r.current_payment_providers || []).map(p => `<span class="tag">${p}</span>`).join('');
+  const painPoints = (r.pain_points || []).map(p => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">⚡ ${p}</div>`).join('');
+  const news = (r.recent_news || []).slice(0,3).map(n => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:12px;color:var(--orange);margin-bottom:3px;">${n.date || ''}</div>
+      <div style="font-size:13px;">${n.headline || ''}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">${n.relevance_to_payments || ''}</div>
+    </div>`).join('');
+
+  // Contacts section
+  const contacts = (r.contacts || []);
+  const contactsHtml = contacts.length > 0 ? contacts.map(c => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--orange-dim);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${c.name || 'Unknown'}</div>
+        <div style="font-size:11px;color:var(--text-dim);">${c.title || ''}</div>
+      </div>
+      <div style="text-align:right;">
+        ${c.email ? `<div style="font-size:12px;color:var(--orange);">${c.email}</div>` : ''}
+        ${c.linkedin_url ? `<a href="${c.linkedin_url}" target="_blank" style="font-size:11px;color:var(--blue);">LinkedIn →</a>` : ''}
+      </div>
+    </div>`).join('') : '<div style="color:var(--text-dim);font-size:13px;padding:12px 0;">No contacts found — try LinkedIn or Apollo for manual lookup</div>';
+
+  document.getElementById('brief-content').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;">${r.company_name || ''}</div>
+        <div style="color:var(--text-dim);font-size:13px;margin-top:3px;">${r.industry || ''} · ${r.location || ''}</div>
+      </div>
+      <div class="badge badge-${(s.tier||'b').toLowerCase()}">Tier ${s.tier || '?'}</div>
+    </div>
+    <div class="intel-grid">
+      <div><div class="intel-label">Estimated GMV</div><div class="intel-value">${r.estimated_gmv || '—'}</div></div>
+      <div><div class="intel-label">Company Size</div><div class="intel-value">${r.size || '—'}</div></div>
+      <div><div class="intel-label">Funding Stage</div><div class="intel-value">${r.funding_stage || '—'}</div></div>
+      <div><div class="intel-label">Website</div><div class="intel-value">${r.website || '—'}</div></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div class="intel-label" style="margin-bottom:8px;">Current Payment Providers</div>
+      <div>${providers || '<span class="tag">Not identified</span>'}</div>
+    </div>
+    ${r.payment_stack_notes ? `<div style="margin-bottom:20px;padding:12px;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text-dim);line-height:1.6;">${r.payment_stack_notes}</div>` : ''}
+    <div style="margin-bottom:20px;">
+      <div class="intel-label" style="margin-bottom:8px;">Buying Signals</div>
+      ${signals || '<div style="color:var(--text-dim);font-size:13px;">No signals identified</div>'}
+    </div>
+    ${r.pain_points?.length ? `<div style="margin-bottom:20px;"><div class="intel-label" style="margin-bottom:8px;">Payment Pain Points</div>${painPoints}</div>` : ''}
+    <div style="margin-bottom:20px;">
+      <div class="intel-label" style="margin-bottom:8px;">Recent News</div>
+      ${news || '<div style="color:var(--text-dim);font-size:13px;">No recent news found</div>'}
+    </div>
+    <div style="margin-bottom:20px;">
+      <div class="intel-label" style="margin-bottom:8px;">Contacts Found (${contacts.length})</div>
+      ${contactsHtml}
+    </div>
+    <div>
+      <div class="intel-label" style="margin-bottom:8px;">Intelligence Summary</div>
+      <div style="font-size:13px;line-height:1.7;">${r.intelligence_summary || '—'}</div>
+    </div>`;
+
+  // SCORE TAB
+  const breakdown = s.score_breakdown || {};
+  const bars = Object.entries(breakdown).map(([key, val]) => `
+    <div class="score-bar-row">
+      <div class="score-bar-label"><span>${key.replace(/_/g,' ')}</span><span>${val}/25</span></div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${(val/25)*100}%"></div></div>
+    </div>`).join('');
+  const goodFit = (s.why_good_fit || []).map(g => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">✅ ${g}</div>`).join('');
+  const objections = (s.risks_or_objections || []).map(rx => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">⚠️ ${rx}</div>`).join('');
+
+  document.getElementById('score-content').innerHTML = `
+    <div class="score-display">
+      <div class="score-ring"><div class="score-number">${s.overall_score || 0}</div><div class="score-max">/100</div></div>
+      <div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <span class="badge badge-${(s.tier||'b').toLowerCase()}">Tier ${s.tier || '?'}</span>
+          <span class="badge badge-${(o.track||'nurture') === 'direct' ? 'direct' : 'nurture'}">${(o.track || 'nurture').toUpperCase()}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-dim);">Recommended: <span style="color:var(--text)">${s.recommended_action || '—'}</span></div>
+      </div>
+    </div>
+    <div style="margin-bottom:20px;"><div class="intel-label" style="margin-bottom:12px;">Score Breakdown</div>${bars}</div>
+    <div style="margin-bottom:8px;background:var(--orange-dim);border:1px solid rgba(242,101,34,0.2);border-radius:10px;padding:16px;">
+      <div class="intel-label" style="margin-bottom:6px;">🎯 Challenger Angle</div>
+      <div style="font-size:13px;line-height:1.6;">${s.challenger_angle || r.challenger_angle || '—'}</div>
+    </div>
+    <div style="margin-bottom:8px;background:var(--surface2);border-radius:10px;padding:16px;">
+      <div class="intel-label" style="margin-bottom:6px;">💡 Best Entry Point</div>
+      <div style="font-size:13px;line-height:1.6;">${s.best_entry_point || '—'}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      <div><div class="intel-label" style="margin-bottom:8px;">Why Good Fit</div>${goodFit || '<div style="color:var(--text-dim);font-size:13px;">—</div>'}</div>
+      <div><div class="intel-label" style="margin-bottom:8px;">Risks & Objections</div>${objections || '<div style="color:var(--text-dim);font-size:13px;">—</div>'}</div>
+    </div>`;
+
+  // EMAILS TAB
+  const outreachArr = o.outreach || [];
+  document.getElementById('emails-content').innerHTML = outreachArr.length ? outreachArr.map((p, i) => `
+    <div class="email-card">
+      <div class="email-persona"><span>${p.persona}</span><span class="badge badge-${(o.track||'nurture') === 'direct' ? 'direct' : 'nurture'}">${(o.track||'nurture').toUpperCase()}</span></div>
+      <div class="email-subject">Subject: ${p.cold_email?.subject_line || ''}</div>
+      <div class="email-section-label">Email Body</div>
+      <textarea class="email-body" id="email-body-${i}">${p.cold_email?.body || ''}</textarea>
+      <div class="email-section-label">PS Line</div>
+      <div style="font-size:13px;color:var(--text-dim);padding:8px 0;">${p.cold_email?.ps_line || ''}</div>
+      <div class="email-section-label">LinkedIn Message</div>
+      <div style="font-size:13px;line-height:1.6;padding:8px 0;">${p.linkedin_message || ''}</div>
+      <div class="email-section-label">Follow Up — Day 3</div>
+      <div style="font-size:13px;line-height:1.6;padding:8px 0;">${p.follow_up_day3 || ''}</div>
+      <div class="email-section-label">Follow Up — Day 7</div>
+      <div style="font-size:13px;line-height:1.6;padding:8px 0;">${p.follow_up_day7 || ''}</div>
+      <div class="email-section-label">Call Script Opener</div>
+      <div style="font-size:13px;line-height:1.6;padding:8px 0;font-style:italic;">"${p.call_script_opener || ''}"</div>
+      <button class="approve-btn" id="approve-${i}" onclick="approveEmail(${i},'${p.persona}')">✓ Approve for Sending</button>
+    </div>`).join('') : '<div class="empty"><div class="empty-icon">✉️</div><h3>No emails generated</h3><p>Only Tier A/B leads get outreach sequences</p></div>';
+
+  // PROMPT TAB
+  document.getElementById('prompt-content').textContent = data.lovablePrompt || 'No Lovable prompt generated (only created for Tier A leads)';
+}
+
+function approveEmail(i, persona) {
+  const btn = document.getElementById('approve-' + i);
+  btn.textContent = '✅ Approved'; btn.classList.add('approved');
+  approvedEmails[i] = true; updateDashboard();
+  showToast('Email approved for ' + persona);
+}
+
+function copyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('prompt-content').textContent).then(() => showToast('Prompt copied!'));
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────
+function updateDashboard() {
+  document.getElementById('stat-total').textContent = allResults.length;
+  document.getElementById('stat-tier-a').textContent = allResults.filter(r => r.score?.tier === 'A').length;
+  const scores = allResults.map(r => r.score?.overall_score || 0).filter(s => s > 0);
+  document.getElementById('stat-avg').textContent = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : '—';
+  document.getElementById('stat-emails').textContent = Object.keys(approvedEmails).length;
+  const feed = document.getElementById('activity-feed');
+  if (!allResults.length) { feed.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><h3>No activity yet</h3><p>Run your first company lookup to get started</p></div>'; return; }
+  feed.innerHTML = allResults.slice(0,5).map(r => `
+    <div class="activity-item">
+      <div class="activity-icon">🏢</div>
+      <div class="activity-text"><div>${r.research?.company_name || r.company_name || 'Unknown'}</div><div class="activity-sub">${r.research?.industry || ''} · Score: ${r.score?.overall_score || '?'}/100</div></div>
+      <span class="badge badge-${(r.score?.tier||'b').toLowerCase()}">Tier ${r.score?.tier || '?'}</span>
+    </div>`).join('');
+}
+
+// ─── RESULTS LIBRARY ──────────────────────────────────────
+async function loadResults() {
+  document.getElementById('results-table-wrap').innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto 16px;"></div><p style="color:var(--text-dim)">Loading results...</p></div>';
+  try {
+    const res = await fetch(API + '/api/results');
+    if (res.ok) { allResults = await res.json(); renderResultsTable(); updateDashboard(); }
+  } catch(e) {
+    document.getElementById('results-table-wrap').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><h3>Could not load results</h3><p>Check your server is running</p></div>';
+  }
+}
+
+function renderResultsTable() {
+  let filtered = allResults;
+  if (tierFilter !== 'all') filtered = filtered.filter(r => r.score?.tier === tierFilter);
+  if (searchFilter) filtered = filtered.filter(r => (r.research?.company_name || r.company_name || '').toLowerCase().includes(searchFilter.toLowerCase()));
+  if (!filtered.length) { document.getElementById('results-table-wrap').innerHTML = '<div class="empty"><div class="empty-icon">📭</div><h3>No results found</h3><p>Try adjusting your filters</p></div>'; return; }
+  document.getElementById('results-table-wrap').innerHTML = `
+    <table>
+      <thead><tr><th>Company</th><th>Score</th><th>Tier</th><th>Track</th><th>Industry</th><th>GMV</th><th>Date</th><th></th></tr></thead>
+      <tbody>${filtered.map((r,i) => `
+        <tr class="expandable" onclick="toggleRow(${i})">
+          <td><strong>${r.research?.company_name || r.company_name || '—'}</strong><br><span style="font-size:11px;color:var(--text-dim)">${r.research?.location || ''}</span></td>
+          <td><span style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--orange)">${r.score?.overall_score || '—'}</span></td>
+          <td><span class="badge badge-${(r.score?.tier||'b').toLowerCase()}">Tier ${r.score?.tier || '?'}</span></td>
+          <td><span class="badge badge-${r.outreach?.track === 'direct' ? 'direct' : 'nurture'}">${(r.outreach?.track || 'nurture').toUpperCase()}</span></td>
+          <td style="font-size:12px;">${r.research?.industry || '—'}</td>
+          <td style="font-size:12px;">${r.research?.estimated_gmv || '—'}</td>
+          <td style="font-size:11px;color:var(--text-dim)">${r.completed_at ? new Date(r.completed_at).toLocaleDateString() : '—'}</td>
+          <td><button class="btn-outline" onclick="event.stopPropagation();loadIntoLookup(${i})">View →</button></td>
+        </tr>
+        <tr id="expand-${i}" style="display:none;">
+          <td colspan="8" style="padding:0 14px 14px;">
+            <div class="expanded-content">
+              <div style="font-size:12px;color:var(--text-dim);line-height:1.7;">${r.research?.intelligence_summary || ''}</div>
+              ${r.score?.challenger_angle || r.research?.challenger_angle ? `<div style="margin-top:12px;padding:10px;background:var(--orange-dim);border-radius:8px;font-size:12px;"><strong>Challenger Angle:</strong> ${r.score?.challenger_angle || r.research?.challenger_angle}</div>` : ''}
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function toggleRow(i) { const r = document.getElementById('expand-' + i); r.style.display = r.style.display === 'none' ? 'table-row' : 'none'; }
+
+function loadIntoLookup(i) {
+  currentResult = allResults[i];
+  document.getElementById('company-input').value = allResults[i].research?.company_name || allResults[i].company_name || '';
+  document.getElementById('pipeline-card').style.display = 'none';
+  displayResults(allResults[i]);
+  showPage('lookup');
+}
+
+function filterResults(val) { searchFilter = val; renderResultsTable(); }
+function setTierFilter(tier, el) { tierFilter = tier; document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); renderResultsTable(); }
+
+function exportCSV() {
+  if (!allResults.length) return;
+  const rows = [['Company','Score','Tier','Track','Industry','GMV','Location','Date']];
+  allResults.forEach(r => rows.push([r.research?.company_name||r.company_name||'',r.score?.overall_score||'',r.score?.tier||'',r.outreach?.track||'',r.research?.industry||'',r.research?.estimated_gmv||'',r.research?.location||'',r.completed_at?new Date(r.completed_at).toLocaleDateString():'']));
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n'));
+  a.download = 'sales-intel-results.csv'; a.click();
+  showToast('CSV exported!');
+}
+
+// ─── BULK ─────────────────────────────────────────────────
+let bulkCompanies = [];
+function handleDrop(e) { e.preventDefault(); document.getElementById('dropzone').classList.remove('dragover'); if (e.dataTransfer.files[0]) processCSV(e.dataTransfer.files[0]); }
+function handleFile(input) { if (input.files[0]) processCSV(input.files[0]); }
+function processCSV(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    bulkCompanies = e.target.result.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    document.getElementById('bulk-count').textContent = bulkCompanies.length + ' companies loaded';
+    document.getElementById('bulk-preview').style.display = 'block';
+    document.getElementById('bulk-table').innerHTML = bulkCompanies.map((c,i) => `<tr id="bulk-row-${i}"><td style="color:var(--text-dim)">${i+1}</td><td>${c}</td><td id="bulk-status-${i}"><span style="color:var(--text-dim)">Pending</span></td><td id="bulk-score-${i}">—</td><td id="bulk-tier-${i}">—</td></tr>`).join('');
+  };
+  reader.readAsText(file);
+}
+async function runBulk() {
+  document.getElementById('bulk-run-btn').disabled = true;
+  document.getElementById('bulk-progress').style.display = 'block';
+  for (let i = 0; i < bulkCompanies.length; i++) {
+    const company = bulkCompanies[i];
+    document.getElementById('bulk-status-' + i).innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>';
+    document.getElementById('bulk-status-text').textContent = 'Processing ' + company + '...';
+    document.getElementById('bulk-bar').style.width = Math.round((i/bulkCompanies.length)*100) + '%';
+    document.getElementById('bulk-progress-pct').textContent = Math.round((i/bulkCompanies.length)*100) + '%';
+    try {
+      await fetch(API + '/api/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({company_name: company}) });
+      let found = false;
+      for (let p = 0; p < 40; p++) {
+        await new Promise(r => setTimeout(r, 8000));
+        try {
+          const res = await fetch(API + '/api/results/' + encodeURIComponent(company));
+          if (res.ok) { const data = await res.json(); if (data?.research) { found = true; document.getElementById('bulk-status-' + i).innerHTML = '<span style="color:var(--green)">✓ Done</span>'; document.getElementById('bulk-score-' + i).innerHTML = `<span style="color:var(--orange);font-weight:700">${data.score?.overall_score||'?'}</span>`; document.getElementById('bulk-tier-' + i).innerHTML = `<span class="badge badge-${(data.score?.tier||'b').toLowerCase()}">Tier ${data.score?.tier||'?'}</span>`; allResults.unshift(data); updateDashboard(); break; } }
+        } catch(e) {}
+      }
+      if (!found) document.getElementById('bulk-status-' + i).innerHTML = '<span style="color:var(--text-dim)">Timeout</span>';
+    } catch(e) { document.getElementById('bulk-status-' + i).innerHTML = '<span style="color:var(--red)">Failed</span>'; }
+    await new Promise(r => setTimeout(r, 5000));
+  }
+  document.getElementById('bulk-bar').style.width = '100%';
+  document.getElementById('bulk-progress-pct').textContent = '100%';
+  document.getElementById('bulk-status-text').textContent = 'All done!';
+  document.getElementById('bulk-run-btn').disabled = false;
+  showToast('Bulk processing complete!');
+}
+
+// ─── AUTH ─────────────────────────────────────────────────
+const USERS = { 'admin': 'salesintel2024', 'liam': 'acquire123', 'team': 'payments2024' };
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (USERS[user] && USERS[user] === pass) {
+    sessionStorage.setItem('si_auth', user);
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-wrap').classList.remove('hidden');
+    loadResults();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-pass').value = '';
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem('si_auth');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app-wrap').classList.add('hidden');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+function checkAuth() {
+  const user = sessionStorage.getItem('si_auth');
+  if (user && USERS[user]) { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('app-wrap').classList.remove('hidden'); return true; }
+  return false;
+}
+if (!checkAuth()) {} else { loadResults(); }
+</script>
+</body>
+</html>
